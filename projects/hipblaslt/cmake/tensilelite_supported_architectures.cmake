@@ -5,6 +5,7 @@
 set(SUPPORTED_ARCHITECTURES
     "gfx908"
     "gfx90a"
+    "gfx90c"
     "gfx942"
     "gfx950"
     "gfx1100"
