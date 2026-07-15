@@ -1,6 +1,6 @@
 - {MinimumRequiredVersion: 4.24.0}
 - vega10
-- gfx900
+- gfx90c
 - [Device 6863, Device 6862, Device 687f, Device 6860, Device 6861, 'Vega 10 XTX [Radeon
     Vega Frontier Edition]', 'Vega [Radeon RX Vega]', Vega, Device 6864, Device 686c,
   'Vega 10 [Radeon Instinct MI25 MxGPU]']
@@ -59,7 +59,7 @@
     AssertSizeEqual: {}
     AssertStrideAEqual: {1: 1}
     AssertStrideBEqual: {0: 1}
-    AssertStrideCEqual: {1: 0}
+    AssertStrideCEqual: {0: 1}
     AssertStrideDEqual: {0: 1}
     AssertSummationElementMultiple: 1
     AssignedDerivedParameters: true
@@ -68,7 +68,7 @@
     BufferStore: true
     CheckDimOverflow: 0
     CheckTensorDimAsserts: false
-    CodeObjectVersion: V3
+    CodeObjectVersion: default
     DepthU: 16
     DirectToLds: false
     DirectToLdsA: false
@@ -96,7 +96,7 @@
     GlobalWriteVectorWidth: 4
     GuaranteeNoPartialA: true
     GuaranteeNoPartialB: true
-    ISA: [9, 0, 0]
+    ISA: [9, 0, 12]
     InnerUnroll: 1
     InterleaveAlpha: 0
     KernelLanguage: Assembly
@@ -273,7 +273,7 @@
     AssertSizeEqual: {}
     AssertStrideAEqual: {1: 1}
     AssertStrideBEqual: {0: 1}
-    AssertStrideCEqual: {1: 0}
+    AssertStrideCEqual: {0: 1}
     AssertStrideDEqual: {0: 1}
     AssertSummationElementMultiple: 1
     AssignedDerivedParameters: true
@@ -282,7 +282,7 @@
     BufferStore: true
     CheckDimOverflow: 0
     CheckTensorDimAsserts: false
-    CodeObjectVersion: V3
+    CodeObjectVersion: default
     DepthU: 16
     DirectToLds: false
     DirectToLdsA: false
@@ -310,7 +310,7 @@
     GlobalWriteVectorWidth: 4
     GuaranteeNoPartialA: true
     GuaranteeNoPartialB: true
-    ISA: [9, 0, 0]
+    ISA: [9, 0, 12]
     InnerUnroll: 1
     InterleaveAlpha: 0
     KernelLanguage: Assembly
