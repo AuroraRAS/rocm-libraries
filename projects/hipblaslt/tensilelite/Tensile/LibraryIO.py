@@ -37,6 +37,10 @@ from Tensile.SolutionStructs.Problem import ProblemType, problemTypeToEnum
 
 from typing import IO, NamedTuple, List, Dict, Optional
 from Tensile.SolutionStructs.Solution import BiasTypeArgs, ActivationArgs
+from Tensile.LibraryLogicSchema import (
+    normalizeLibraryLogicListSchema,
+    normalizeLibraryLogicSchema,
+)
 import io
 import os
 import sys
@@ -517,6 +521,8 @@ def parseLibraryLogicData(
     if isinstance(data, List):
         data = parseLibraryLogicList(data, srcFile)
 
+    normalizeLibraryLogicSchema(data, srcFile)
+
     if "CUCount" not in data:
         data["CUCount"] = None
     if 'MacDataTypeA' not in data["ProblemType"]: #it will either be set as d['MacDataType'] or a specified input
@@ -620,6 +626,8 @@ def parseLibraryLogicList(data, srcFile="?"):
     if len(data) < 9:
         printExit("Library logic file {} is missing required fields (len = {} < 9)" \
                 .format(srcFile, len(data)))
+
+    normalizeLibraryLogicListSchema(data)
 
     rv = {}
     rv["MinimumRequiredVersion"] = data[0]["MinimumRequiredVersion"]

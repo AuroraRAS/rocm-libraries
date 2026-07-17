@@ -102,6 +102,51 @@ def test_parse_library_logic_data_dict_path(assembler, isa_info_map, snapshot):
     assert _summarize_logic(logic) == snapshot
 
 
+def test_parse_library_logic_data_normalizes_named_legacy_schema(assembler, isa_info_map):
+    data = _raw_dict()
+    solution = data["Solutions"][0]
+    solution.update({
+        "DirectToLds": bool(solution["DirectToLds"]),
+        "PrefetchGlobalRead": bool(solution["PrefetchGlobalRead"]),
+        "PrefetchLocalRead": bool(solution["PrefetchLocalRead"]),
+        "UseSgprForGRO": bool(solution["UseSgprForGRO"]),
+        "VectorStore": bool(solution["VectorStore"]),
+        "Use64bShadowLimit": int(solution["Use64bShadowLimit"]),
+        "AssertMinApproxSize": 3,
+    })
+
+    logic = L.parseLibraryLogicData(
+        data, str(_FIXTURE), assembler, False, False, False, isa_info_map, False
+    )
+
+    assert logic.typeMismatches == {}
+    assert "AssertMinApproxSize" not in solution
+    assert all(
+        type(solution[key]) is int
+        for key in (
+            "DirectToLds",
+            "PrefetchGlobalRead",
+            "PrefetchLocalRead",
+            "UseSgprForGRO",
+            "VectorStore",
+        )
+    )
+    assert type(solution["Use64bShadowLimit"]) is bool
+
+
+def test_parse_library_logic_data_keeps_invalid_legacy_encoding_strict(
+    assembler, isa_info_map
+):
+    data = _raw_dict()
+    data["Solutions"][0]["Use64bShadowLimit"] = 2
+
+    logic = L.parseLibraryLogicData(
+        data, str(_FIXTURE), assembler, False, False, False, isa_info_map, False
+    )
+
+    assert any(key[0] == "Use64bShadowLimit" for key in logic.typeMismatches)
+
+
 def test_parse_library_logic_data_no_cucount_with_datatypes(assembler, isa_info_map, snapshot):
     # A dict without CUCount (-> CUCount defaulting) whose ProblemType already
     # carries DataTypeA/DataTypeB (-> the getRealDataType* else branches).
