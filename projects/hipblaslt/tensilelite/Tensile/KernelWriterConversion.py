@@ -108,15 +108,23 @@ class KernelWriterConversion(KernelWriterBase):
     if not problem_type["UseInitialStridesCD"]:
       comment = "/* hard-coded initial strides */"
 
-    tensors = ["D", "W", "C"]
-    if problem_type["UseE"]:
-      tensors.insert(0, "E")
-
     result = comment + self.endLine
-    for tensor in tensors:
+    for tensor in self._initialStrideTensors():
       source = "arg.stride%s%s" % (tensor, index_char) if problem_type["UseInitialStridesCD"] else "1"
       result += "#define stride%s%s %s%s" % (tensor, index_char, source, self.endLine)
     return result
+
+  def _initialStrideTensors(self):
+    tensors = ["D", "W", "C"]
+    if self.state["ProblemType"]["UseE"]:
+      tensors.insert(0, "E")
+    return tensors
+
+  def _initialStrideUndefines(self):
+    index_char = self.indexChars[0]
+    return "".join(
+      "#undef stride%s%s%s" % (tensor, index_char, self.endLine)
+      for tensor in self._initialStrideTensors())
 
   def functionArgument(self):
     kStr = ""
@@ -845,12 +853,7 @@ class KernelWriterConversion(KernelWriterBase):
     kStr += "}%s" % self.endLine
     kStr += "#undef NUM_GSU" + self.endLine
     kStr += "#undef NUM_ELEMENT_LOAD" + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#undef strideD" + self.indexChars[i] + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#undef strideW" + self.indexChars[i] + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#undef strideC" + self.indexChars[i] + self.endLine
+    kStr += self._initialStrideUndefines()
     kStr += "#undef GLOBAL_D%s" % (self.endLine)
     kStr += "#undef GLOBAL_W%s" % (self.endLine)
     kStr += "#undef GLOBAL_C%s" % (self.endLine)

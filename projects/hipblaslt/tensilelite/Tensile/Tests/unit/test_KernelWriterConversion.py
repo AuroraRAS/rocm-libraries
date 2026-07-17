@@ -51,10 +51,13 @@ def _stride_writer(use_initial_strides, use_e=False):
 
 
 def test_conversion_uses_supplied_initial_strides():
-    defines = _stride_writer(True, use_e=True)._initialStrideDefines()
+    writer = _stride_writer(True, use_e=True)
+    defines = writer._initialStrideDefines()
+    undefines = writer._initialStrideUndefines()
 
     for tensor in ("E", "D", "W", "C"):
         assert f"#define stride{tensor}0I arg.stride{tensor}0I\n" in defines
+        assert f"#undef stride{tensor}0I\n" in undefines
     assert "hard-coded initial strides" not in defines
 
 
