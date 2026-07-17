@@ -101,6 +101,23 @@ class KernelWriterConversion(KernelWriterBase):
       return self.datatype
     return "%s%s" % (default_type, "" if self.num_dword_load == 1 else self.num_dword_load)
 
+  def _initialStrideDefines(self):
+    problem_type = self.state["ProblemType"]
+    index_char = self.indexChars[0]
+    comment = "/* supplied initial strides */"
+    if not problem_type["UseInitialStridesCD"]:
+      comment = "/* hard-coded initial strides */"
+
+    tensors = ["D", "W", "C"]
+    if problem_type["UseE"]:
+      tensors.insert(0, "E")
+
+    result = comment + self.endLine
+    for tensor in tensors:
+      source = "arg.stride%s%s" % (tensor, index_char) if problem_type["UseInitialStridesCD"] else "1"
+      result += "#define stride%s%s %s%s" % (tensor, index_char, source, self.endLine)
+    return result
+
   def functionArgument(self):
     kStr = ""
 
@@ -231,24 +248,7 @@ class KernelWriterConversion(KernelWriterBase):
 
     ########################################
     # defined initial strides
-    firstStride = 0
-    if problemType["UseInitialStridesCD"]:
-      # no strides #defined
-      lastStrideC = 0
-      assert 0  # need to fix beta-clear routine to pass initial stride parms
-    else:
-      # #define initial stride
-      kStr += "/* hard-coded initial strides */%s" % self.endLine
-      lastStrideC = 1
-    if self.state["ProblemType"]["UseE"]:
-      for i in range(firstStride, lastStrideC):
-        kStr += "#define strideE" + self.indexChars[i] + " 1" + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#define strideD" + self.indexChars[i] + " 1" + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#define strideW" + self.indexChars[i] + " 1" + self.endLine
-    for i in range(firstStride, lastStrideC):
-      kStr += "#define strideC" + self.indexChars[i] + " 1" + self.endLine
+    kStr += self._initialStrideDefines()
 
     ########################################
     # GLOBAL_E()
