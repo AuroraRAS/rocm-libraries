@@ -96,7 +96,7 @@ class FMA_F16_HPA_MAD_MIX(MAC):
               "UseDotInstruction": False,
              }
 
-    def __call__(self, writer, m, innerUnroll):
+    def __call__(self, writer, tPA, tPB, m, innerUnroll):
         kernel = writer.states.kernel
 
         module = Module("FMA_F16_HPA_MAD_MIX")
@@ -124,8 +124,8 @@ class FMA_F16_HPA_MAD_MIX(MAC):
                 for iui in range(0, innerUnroll):
                     vars["block0"] = block0
                     vars["block1"] = block1
-                    vars["blockA"] = block0 if writer.tPA["tileIdx"] == 0 else block1
-                    vars["blockB"] = block1 if writer.tPB["tileIdx"] != 0 else block0
+                    vars["blockA"] = block0 if tPA["tileIdx"] == 0 else block1
+                    vars["blockB"] = block1 if tPB["tileIdx"] != 0 else block0
                     vars["iui"] = iui
 
                     vars["aBase"] = "vgprValuA_X{m}_I{iui}".format_map(vars)
@@ -143,13 +143,13 @@ class FMA_F16_HPA_MAD_MIX(MAC):
                     vars["cIdxExpr"] = "{block0}*2 + {block1}*{ThreadTile0}*2 + 0*2 + 1".format_map(vars)
                     cidx  = eval(vars["cIdxExpr"])
                     cStr  = "v[vgprValuC + {cIdxExpr}]".format_map(vars) # *2 b/c of fp32
-                    opSel = "op_sel:[1,0,0]" if writer.tPA["tileIdx"] == 0 else "op_sel:[0,1,0]"
+                    opSel = "op_sel:[1,0,0]" if tPA["tileIdx"] == 0 else "op_sel:[0,1,0]"
                     module.addInst(instruction, cStr, aStr, bStr, cStr, opSel, "op_sel_hi:[1,1,0]", "ValuC[%u]" % cidx)
 
                     vars["cIdxExpr"] = "{block0}*2 + {block1}*{ThreadTile0}*2 + {Half_ThreadTile0}*2 + 0".format_map(vars)
                     cidx  = eval(vars["cIdxExpr"])
                     cStr  = "v[vgprValuC+{cIdxExpr}]".format_map(vars)
-                    opSel = "op_sel:[0,1,0]" if writer.tPA["tileIdx"] == 0 else "op_sel:[1,0,0]"
+                    opSel = "op_sel:[0,1,0]" if tPA["tileIdx"] == 0 else "op_sel:[1,0,0]"
                     module.addInst(instruction, cStr, aStr, bStr, cStr, opSel, "op_sel_hi:[1,1,0]", "ValuC[%u]" % cidx)
 
                     vars["cIdxExpr"] = "{block0}*2+{block1}*{ThreadTile0}*2+{Half_ThreadTile0}*2+1".format_map(vars)

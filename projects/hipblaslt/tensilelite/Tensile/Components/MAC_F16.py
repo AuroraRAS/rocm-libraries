@@ -39,7 +39,7 @@ class MAC_F16_Plain(MAC):
                               "MacDataTypeB": DataType(DataTypeEnum.Half),
                               "HighPrecisionAccumulate": False}}
 
-    def __call__(self, writer, m, innerUnroll):
+    def __call__(self, writer, tPA, tPB, m, innerUnroll):
         kernel = writer.states.kernel
 
         module = Module("MAC_F16_Plain")
@@ -85,7 +85,7 @@ class FMA_F16_NonPacked(MAC):
                               "MacDataTypeB": DataType(DataTypeEnum.Half),
                               "HighPrecisionAccumulate": False}}
 
-    def __call__(self, writer, m, innerUnroll):
+    def __call__(self, writer, tPA, tPB, m, innerUnroll):
         kernel = writer.states.kernel
 
         module = Module("FMA_F16_NonPacked")
@@ -137,7 +137,7 @@ class FMA_F16_Packed(MAC):
                               "MacDataTypeB": DataType(DataTypeEnum.Half),
                               "HighPrecisionAccumulate": False}}
 
-    def __call__(self, writer, m, innerUnroll):
+    def __call__(self, writer, tPA, tPB, m, innerUnroll):
         kernel = writer.states.kernel
 
         module = Module("FMA_F16_Packed")
