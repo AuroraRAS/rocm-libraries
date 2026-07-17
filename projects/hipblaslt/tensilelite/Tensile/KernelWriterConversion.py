@@ -89,6 +89,18 @@ class KernelWriterConversion(KernelWriterBase):
         self.gsuKernels.append(pgrgsu)
         pgrgsu = int(pgrgsu / 2)
 
+  @staticmethod
+  def _loadWidth(num_elements, data_type):
+    load_bytes = num_elements * data_type.numBytes()
+    return max(1, int(load_bytes / 4)), load_bytes < 4
+
+  def _loadType(self, default_type):
+    if self.state["ProblemType"]["DataType"].isComplex():
+      return "%s%s" % (self.datatype, "" if self.num_dword_load == 1 else self.num_dword_load)
+    if self.is_sub_dword_load:
+      return self.datatype
+    return "%s%s" % (default_type, "" if self.num_dword_load == 1 else self.num_dword_load)
+
   def functionArgument(self):
     kStr = ""
 
@@ -297,7 +309,8 @@ class KernelWriterConversion(KernelWriterBase):
       kStr += " + (IDX%s)*arg.strideBias" % (indexChar)
       kStr += " ))" + self.endLine
 
-    self.num_dword_load = int(self.num_elements_load * self.state["ProblemType"]["ComputeDataType"].numBytes() / 4)
+    self.num_dword_load, self.is_sub_dword_load = self._loadWidth(
+      self.num_elements_load, self.state["ProblemType"]["ComputeDataType"])
     self.num_dword_store = int(self.num_elements_load * self.state["ProblemType"]["DestDataType"].numBytes() / 4)
     if self.num_dword_store == 0:
       self.num_dword_store = self.num_elements_load * self.state["ProblemType"]["DestDataType"].numBytes() / 4
@@ -514,11 +527,10 @@ class KernelWriterConversion(KernelWriterBase):
 
     typeStr = "int" if self.state["ProblemType"]["DataType"].isInt8() or self.state["ProblemType"]["DataType"].isInt32() else ("double" if self.state["ProblemType"]["DataType"].isDouble() else "float")
     typeStr2 = "int16_t" if self.state["ProblemType"]["DestDataType"].isInt8() else ("tensile_half" if self.state["ProblemType"]["DestDataType"].isAnyFloat8() else "tensile_bfloat16")
+    loadTypeStr = self._loadType(typeStr)
     if self.state["ProblemType"]["DataType"].isComplex():
-      loadTypeStr = "%s%s" % (self.datatype, "" if self.num_dword_load == 1 else self.num_dword_load)
       storeTypeStr = "%s%s" % (self.datatype, "" if self.num_dword_store == 1 else self.num_dword_store)
     else:
-      loadTypeStr = "%s%s" % (typeStr, "" if self.num_dword_load == 1 else self.num_dword_load)
       storeTypeStr = "%s%s" % (typeStr, self.num_dword_store) if self.num_dword_store >= 1 else typeStr2 if self.num_dword_store == 0.5 else destTypeStr
 
     #Bias A/B
