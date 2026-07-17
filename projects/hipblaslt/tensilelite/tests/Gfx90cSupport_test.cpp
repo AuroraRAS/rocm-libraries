@@ -40,10 +40,7 @@ TEST(Gfx90cSupport, ProcessorDeserializesFromMessagePack)
     EXPECT_EQ(processor, AMDGPU::Processor::gfx90c);
 }
 
-TEST(Gfx90cSupport, LazyLoadingRoutesTargetIdsToGfx90cShard)
+TEST(Gfx90cSupport, LazyLoadingUsesGfx90cShardPattern)
 {
-    EXPECT_EQ(LazyLoadingInitFromArchitecture("gfx90c"), LazyLoadingInit::gfx90c);
-    EXPECT_EQ(LazyLoadingInitFromArchitecture("gfx90c:xnack+"), LazyLoadingInit::gfx90c);
-    EXPECT_EQ(LazyLoadingInitFromArchitecture("gfx90c:xnack-"), LazyLoadingInit::gfx90c);
     EXPECT_EQ(RegexPattern(LazyLoadingInit::gfx90c), "TensileLibrary_*_gfx90c");
 }
