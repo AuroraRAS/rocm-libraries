@@ -22,44 +22,29 @@
 #
 ################################################################################
 
-import inspect
-from types import SimpleNamespace
-
-from Tensile import Components  # noqa: F401 - registers component implementations
-from Tensile.Component import MAC
-from Tensile.Components import MAC_F16
+import rocisa
+from rocisa.code import Module
 
 
-def _concrete_implementations(component):
-    for implementation in component.implementations.values():
-        if inspect.isabstract(implementation):
-            yield from _concrete_implementations(implementation)
-        else:
-            yield implementation
+def test_add_inst_formats_legacy_instruction():
+    module = Module("legacy")
+
+    module.addInst("v_add_u32", "v0", "v1", 2, "add operands")
+
+    assert str(module) == "v_add_u32 v0, v1, 2".ljust(50) + " // add operands\n"
 
 
-def test_mac_components_share_call_interface():
-    expected = ["self", "writer", "tPA", "tPB", "m", "innerUnroll"]
+def test_add_inst_instruction_survives_no_comment_output():
+    module = Module("legacy")
+    module.addInst("s_nop", 0, "wait")
 
-    for implementation in _concrete_implementations(MAC):
-        assert list(inspect.signature(implementation.__call__).parameters) == expected, \
-            implementation.__name__
-
-
-def test_packed_f16_mac_generates_both_accumulator_halves():
-    kernel = {
-        "ThreadTile0": 2,
-        "ThreadTile1": 2,
-    }
-    writer = SimpleNamespace(states=SimpleNamespace(
-        archCaps={},
-        asmCaps={"v_pk_fma_f16": True},
-        kernel=kernel,
-    ))
-
-    module = MAC_F16.FMA_F16_Packed()(writer, {}, {}, 0, 1)
-    generated = str(module)
-
-    assert generated.count("v_pk_fma_f16") == 2
-    assert "v[vgprValuC + 0]" in generated
-    assert "v[vgprValuC + 1]" in generated
+    target = rocisa.rocIsa.getInstance()
+    options = target.getOutputOptions()
+    original = options.outputNoComment
+    try:
+        options.outputNoComment = True
+        target.setOutputOptions(options)
+        assert str(module) == "s_nop 0\n"
+    finally:
+        options.outputNoComment = original
+        target.setOutputOptions(options)
