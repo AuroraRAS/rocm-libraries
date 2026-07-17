@@ -26,6 +26,8 @@ set(SUPPORTED_ARCHITECTURES
     "gfx942:xnack+"
     "gfx950:xnack+"
     "gfx1250:xnack+"
+    "gfx90c:xnack+"
+    "gfx90c:xnack-"
 )
 
 # Base architectures - used when "all" is specified for GPU_TARGETS

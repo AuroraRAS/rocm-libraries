@@ -46,6 +46,7 @@ namespace TensileLite
         None,
         gfx803,
         gfx900,
+        gfx90c,
         gfx906,
         gfx908,
         gfx90a,
@@ -75,6 +76,57 @@ namespace TensileLite
         All
     };
 
+    inline LazyLoadingInit LazyLoadingInitFromArchitecture(std::string const& architecture)
+    {
+        if(architecture.find("gfx803") != std::string::npos)
+            return LazyLoadingInit::gfx803;
+        if(architecture.find("gfx900") != std::string::npos)
+            return LazyLoadingInit::gfx900;
+        if(architecture.find("gfx90c") != std::string::npos)
+            return LazyLoadingInit::gfx90c;
+        if(architecture.find("gfx906") != std::string::npos)
+            return LazyLoadingInit::gfx906;
+        if(architecture.find("gfx908") != std::string::npos)
+            return LazyLoadingInit::gfx908;
+        if(architecture.find("gfx90a") != std::string::npos)
+            return LazyLoadingInit::gfx90a;
+        if(architecture.find("gfx942") != std::string::npos)
+            return LazyLoadingInit::gfx942;
+        if(architecture.find("gfx950") != std::string::npos)
+            return LazyLoadingInit::gfx950;
+        if(architecture.find("gfx1010") != std::string::npos)
+            return LazyLoadingInit::gfx1010;
+        if(architecture.find("gfx1011") != std::string::npos)
+            return LazyLoadingInit::gfx1011;
+        if(architecture.find("gfx1012") != std::string::npos)
+            return LazyLoadingInit::gfx1012;
+        if(architecture.find("gfx1030") != std::string::npos)
+            return LazyLoadingInit::gfx1030;
+        if(architecture.find("gfx1100") != std::string::npos)
+            return LazyLoadingInit::gfx1100;
+        if(architecture.find("gfx1101") != std::string::npos)
+            return LazyLoadingInit::gfx1101;
+        if(architecture.find("gfx1102") != std::string::npos)
+            return LazyLoadingInit::gfx1102;
+        if(architecture.find("gfx1103") != std::string::npos)
+            return LazyLoadingInit::gfx1103;
+        if(architecture.find("gfx1150") != std::string::npos)
+            return LazyLoadingInit::gfx1150;
+        if(architecture.find("gfx1151") != std::string::npos)
+            return LazyLoadingInit::gfx1151;
+        if(architecture.find("gfx1152") != std::string::npos)
+            return LazyLoadingInit::gfx1152;
+        if(architecture.find("gfx1153") != std::string::npos)
+            return LazyLoadingInit::gfx1153;
+        if(architecture.find("gfx1200") != std::string::npos)
+            return LazyLoadingInit::gfx1200;
+        if(architecture.find("gfx1201") != std::string::npos)
+            return LazyLoadingInit::gfx1201;
+        if(architecture.find("gfx1250") != std::string::npos)
+            return LazyLoadingInit::gfx1250;
+        return LazyLoadingInit::None;
+    }
+
     //Regex patterns for initializing libraries on startup
     inline std::string RegexPattern(LazyLoadingInit condition)
     {
@@ -86,6 +138,8 @@ namespace TensileLite
             return "TensileLibrary_*_gfx803";
         case LazyLoadingInit::gfx900:
             return "TensileLibrary_*_gfx900";
+        case LazyLoadingInit::gfx90c:
+            return "TensileLibrary_*_gfx90c";
         case LazyLoadingInit::gfx906:
             return "TensileLibrary_*_gfx906";
         case LazyLoadingInit::gfx908:
@@ -363,4 +417,3 @@ namespace TensileLite
     };
 
 } // namespace TensileLite
-

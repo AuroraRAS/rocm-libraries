@@ -39,6 +39,8 @@ architectureMap = {
     "gfx803": "r9nano",
     "gfx900": "vega10",
     "gfx90c": "vega10",
+    "gfx90c:xnack+": "vega10",
+    "gfx90c:xnack-": "vega10",
     "gfx906": "vega20",
     "gfx906:xnack+": "vega20",
     "gfx906:xnack-": "vega20",
@@ -72,6 +74,7 @@ architectureMap = {
 }
 
 gfxVariantMap = {
+    "gfx90c": ["gfx90c:xnack+", "gfx90c:xnack-"],
     "gfx906": ["gfx906:xnack+", "gfx906:xnack-"],
     "gfx908": ["gfx908:xnack+", "gfx908:xnack-"],
     "gfx90a": ["gfx90a:xnack+", "gfx90a:xnack-"],

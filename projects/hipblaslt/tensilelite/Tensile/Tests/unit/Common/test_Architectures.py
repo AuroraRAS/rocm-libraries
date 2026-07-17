@@ -306,6 +306,8 @@ def test_verifyPredicate_invalid_predicate():
 def test_gfx90c_architecture_map():
     from Tensile.Common.Architectures import architectureMap
     assert architectureMap["gfx90c"] == "vega10"
+    assert architectureMap["gfx90c:xnack+"] == "vega10"
+    assert architectureMap["gfx90c:xnack-"] == "vega10"
 
 
 def test_gfx90c_supported_isa():
@@ -313,4 +315,8 @@ def test_gfx90c_supported_isa():
     from Tensile.Common.Types import IsaVersion
     assert IsaVersion(9, 0, 12) in SUPPORTED_ISA
 
+
+def test_gfx90c_variants():
+    from Tensile.Common.Architectures import gfxVariantMap
+    assert gfxVariantMap["gfx90c"] == ["gfx90c:xnack+", "gfx90c:xnack-"]
 
