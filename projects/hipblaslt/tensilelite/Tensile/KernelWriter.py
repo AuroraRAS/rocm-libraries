@@ -73,6 +73,11 @@ from typing import Dict, List, NamedTuple, Optional,Tuple, Type
 from math import ceil, prod
 import itertools
 
+
+def _registerCount(value):
+  """Normalize integral register arithmetic for native register-pool APIs."""
+  return int(value)
+
 # TODO: DEBUG ONLY, remove later
 from pprint import pprint
 
@@ -7729,7 +7734,7 @@ class KernelWriter(metaclass=abc.ABCMeta):
           self.states.a.numVgprValuPerBlock = int(kernel["ThreadTileA"] * tensorParametersA["bpe"] // self.states.bpr)
           self.states.b.numVgprValuPerBlock = int(kernel["ThreadTileB"] * tensorParametersB["bpe"] // self.states.bpr)
 
-        self.states.c.numVgprValu = kernel["ThreadTile0"] * kernel["ThreadTile1"] * kernel["ProblemType"]["ComputeDataType"].numRegisters()
+        self.states.c.numVgprValu = _registerCount(kernel["ThreadTile0"] * kernel["ThreadTile1"] * kernel["ProblemType"]["ComputeDataType"].numRegisters())
         self.states.a.numVgprValu = self.states.a.numVgprValuPerBlock * valuBlocksA
         self.states.b.numVgprValu = self.states.b.numVgprValuPerBlock * valuBlocksB
 
@@ -8976,7 +8981,7 @@ class KernelWriter(metaclass=abc.ABCMeta):
       self.states.startVgprSerial = vgprIdx
       vgprIdx += 1 # for vgpr serial id
 
-      self.states.totalVgprs = max(vgprIdx, self.states.c.numVgprValu)
+      self.states.totalVgprs = _registerCount(max(vgprIdx, self.states.c.numVgprValu))
       if self.states.totalVgprs < 0 or self.states.totalVgprs > self.states.regCaps["MaxVgpr"]:
         raise RuntimeError("Generating asm kernel error: total vgpr: %u not in [0, %u].\n" % (self.states.totalVgprs, self.states.regCaps["MaxVgpr"]))
 
@@ -9022,7 +9027,7 @@ class KernelWriter(metaclass=abc.ABCMeta):
           self.states.mxsb.startVgprGL2PrefetchAddr = vgprIdx
           vgprIdx += tensorParametersB["MX"]["gl2nl"] * self.states.rpga
 
-      self.states.totalVgprs = vgprIdx
+      self.states.totalVgprs = _registerCount(vgprIdx)
 
       return
 
