@@ -1,6 +1,6 @@
 ################################################################################
 #
-# Copyright (C) 2022-2025 Advanced Micro Devices, Inc. All rights reserved.
+# Copyright (C) 2026 Advanced Micro Devices, Inc. All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -22,30 +22,15 @@
 #
 ################################################################################
 
-from ..Component import Component
 from rocisa.code import Module
-from rocisa.instruction import SSetPrior
 
-class Priority(Component):
-    """
-    Raise/lower workgroup priority.
-    """
+from Tensile.Components.Priority import AggressivePriority
 
-class AggressivePriority(Priority):
-    """
-    Priority implementation which does set the priority.
 
-    Keeps track of the previous value in the instance and only sets priority
-    if the new priority is different.
-    """
+def test_unchanged_priority_returns_empty_module():
+    priority = AggressivePriority(currentPrio=1)
 
-    def __init__(self, currentPrio=None):
-        self.currentPrio = currentPrio
+    result = priority(None, 1)
 
-    def __call__(self, writer, prio, message=""):
-        if prio == self.currentPrio:
-            return Module("Unchanged priority")
-
-        self.currentPrio = prio
-
-        return SSetPrior(prior=prio, comment=message)
+    assert isinstance(result, Module)
+    assert not list(result.items())
