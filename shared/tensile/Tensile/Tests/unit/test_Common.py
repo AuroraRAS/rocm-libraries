@@ -72,4 +72,3 @@ def test_paths():
 def test_architectureMap():
     assert Common.architectureMap["gfx90c"] == "vega10"
     assert Common.architectureMap["gfx90c:xnack+"] == "vega10"
-

@@ -12,7 +12,7 @@ def _load_amax_mod():
     assert spec and spec.loader
     mod = importlib.util.module_from_spec(spec)
     # We must patch the module inside sys.modules or mock before exec_module
-    # to handle module-level imports. However, since the error occurred in 
+    # to handle module-level imports. However, since the error occurred in
     # kernel_header which is executed at test runtime, setting it after load is sufficient.
     spec.loader.exec_module(mod)
     mod._global_ti = mock_global_ti

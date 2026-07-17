@@ -32,4 +32,3 @@ for i in nn tn; do
 		touch ${k}.end
 	done
 done
-
