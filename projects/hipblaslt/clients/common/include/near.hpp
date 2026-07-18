@@ -50,9 +50,10 @@ inline void hipblaslt_near_compare_double(double a, double b, double abs_err)
     if(std::isfinite(a) && std::isfinite(b))
         ASSERT_NEAR(a, b, abs_err);
     else if(std::isnan(a) || std::isnan(b))
-        ASSERT_TRUE(std::isnan(a) && std::isnan(b));
+        ASSERT_TRUE(std::isnan(a) && std::isnan(b)) << "CPU=" << a << ", GPU=" << b;
     else
-        ASSERT_TRUE(std::isinf(a) && std::isinf(b) && (a == b));
+        ASSERT_TRUE(std::isinf(a) && std::isinf(b) && (a == b))
+            << "CPU=" << a << ", GPU=" << b;
 }
 #endif
 

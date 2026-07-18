@@ -26,7 +26,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
-#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
@@ -417,7 +416,9 @@ namespace
                                                             batchStride);
         }
 
-        ASSERT_THAT(hC, ::testing::Pointwise(::testing::FloatNear(1e-5), cpuRef));
+        ASSERT_EQ(hC.size(), cpuRef.size());
+        for(size_t i = 0; i < hC.size(); ++i)
+            ASSERT_NEAR(hC[i], cpuRef[i], 1e-5) << "element " << i;
     }
 }
 

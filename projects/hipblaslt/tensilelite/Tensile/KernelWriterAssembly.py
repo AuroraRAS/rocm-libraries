@@ -1081,6 +1081,13 @@ class KernelWriterAssembly(KernelWriter):
     ########################################
     def macroAndSetImplClassic():
 
+      gfx90cFp16HpaFallback = (
+          self.states.version == (9, 0, 12)
+          and kernel["ProblemType"]["HighPrecisionAccumulate"]
+          and kernel["ProblemType"]["MacDataTypeA"].isHalf()
+          and kernel["ProblemType"]["MacDataTypeB"].isHalf()
+      )
+
       module.addComment2("VGPR Assignments for MX")
       module.add(RegSet("v", "vgprMXSBase", 0))
 
@@ -1244,7 +1251,9 @@ class KernelWriterAssembly(KernelWriter):
             for iui in range(0, kernel["InnerUnroll"]):
               moduleVgprMacroValuA.add(RegSet("v", "vgprValuA_X%u_I%u"%(bi,iui), "vgprValuA_X0_I0_BASE", ri))
               ri += self.states.a.numVgprValuPerBlock
-            if tPA["bpe"] < 4 and not kernel["UnrollMajorLDSA"] and not (kernel["UsePLRPack"] and self.states.numItersPLR):
+            if (tPA["bpe"] < 4 and not kernel["UnrollMajorLDSA"]
+                and not (kernel["UsePLRPack"] and self.states.numItersPLR)
+                and not gfx90cFp16HpaFallback):
               ri = 0
           ri = 0
           if kernel["EnableMatrixInstruction"] and tPA["bpe"] < 4 and not kernel["UnrollMajorLDSA"] and not kernel["enableLDSTrA"]:
@@ -1290,7 +1299,9 @@ class KernelWriterAssembly(KernelWriter):
             for iui in range(0, kernel["InnerUnroll"]):
               moduleVgprMacroValuB.add(RegSet("v", "vgprValuB_X%u_I%u"%(bi,iui), "vgprValuB_X0_I0_BASE", ri))
               ri += self.states.b.numVgprValuPerBlock
-            if (tPB["bpe"] < 4 and not kernel["UnrollMajorLDSB"]) and not (kernel["UsePLRPack"] and self.states.numItersPLR):
+            if ((tPB["bpe"] < 4 and not kernel["UnrollMajorLDSB"])
+                and not (kernel["UsePLRPack"] and self.states.numItersPLR)
+                and not gfx90cFp16HpaFallback):
               ri = 0
           ri = 0
           if kernel["EnableMatrixInstruction"] and tPB["bpe"] < 4 and not kernel["UnrollMajorLDSB"] and not kernel["enableLDSTrB"]:
@@ -2048,6 +2059,13 @@ class KernelWriterAssembly(KernelWriter):
 
     if self.states.invalidLSUCode:
       self.states.overflowedResources = 7
+
+    # gfx90c FP16 HPA macros use unpack VGPRs while every main/tail-loop module
+    # is generated. Release the reservation only after resource accounting and
+    # code generation are complete so RegisterPool can verify its final state.
+    if self.states.gfx90cFp16HpaUnpackVgpr is not None:
+      self.vgprPool.checkIn(self.states.gfx90cFp16HpaUnpackVgpr)
+      self.states.gfx90cFp16HpaUnpackVgpr = None
 
     self.vgprPool.checkFinalState()
 

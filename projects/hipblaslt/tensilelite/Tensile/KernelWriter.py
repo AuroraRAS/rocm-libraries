@@ -257,6 +257,7 @@ class StateValues:
 
   # KernelWriterAssembly
   mixinst: Optional[Type[Instruction]]   = None
+  gfx90cFp16HpaUnpackVgpr: Optional[int] = None
   globalReadIncsUseVgpr: bool            = False
   groOffsetInMacroTile: int              = 0
   use64bShadowLimit: bool                = True

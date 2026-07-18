@@ -23,9 +23,18 @@
 ################################################################################
 
 from rocisa.code import Module
-from rocisa.container import vgpr
+from rocisa.container import VOP3PModifiers, vgpr
 from rocisa.enum import DataTypeEnum
-from rocisa.instruction import SSetPrior, VDot2F32F16, VDot2CF32F16
+from rocisa.instruction import (
+    SSetPrior,
+    VCvtF16toF32,
+    VDot2F32F16,
+    VDot2CF32F16,
+    VFmaF32,
+    VFmaMixF32,
+    VLShiftRightB32,
+    VMadMixF32,
+)
 
 from ..Common.DataType import DataType
 from ..Component import Component, MAC
@@ -103,12 +112,17 @@ class FMA_F16_HPA_MAD_MIX(MAC):
         module.addComment(self.commentHeader())
         priority = Component.Priority.find(writer)
 
+        if tuple(getattr(writer.states, "version", ())) == (9, 0, 12):
+            return self._gfx90c_f32_mac(
+                writer, module, priority, tPA, tPB, m, innerUnroll
+            )
+
         vars = {}
 
         if writer.states.asmCaps["v_fma_mix_f32"]:
-            instruction = "v_fma_mix_f32"
+            instruction = VFmaMixF32
         else:
-            instruction = "v_mad_mix_f32"
+            instruction = VMadMixF32
 
         vars["m"] = m
         vars["kernel"] = kernel
@@ -133,30 +147,111 @@ class FMA_F16_HPA_MAD_MIX(MAC):
 
                     vars["cIdxExpr"] = "{block0}*2 + {block1}*{ThreadTile0}*2 + 0*2 + 0".format_map(vars)
                     cidx = eval(vars["cIdxExpr"])
-                    cStr = "v[vgprValuC + {cIdxExpr}]".format_map(vars) # *2 b/c of fp32
-                    aStr = "v[{aBase}+{blockA}]".format_map(vars)
-                    bStr = "v[{bBase}+{blockB}]".format_map(vars)
-                    module.addInst(instruction, cStr, aStr, bStr, cStr, "op_sel:[0,0,0]", "op_sel_hi:[1,1,0]", "ValuC[%u] iui=%u" % (cidx, vars["iui"]))
+                    cReg = vgpr("ValuC+%u" % cidx)
+                    aReg = vgpr("ValuA_X{m}_I{iui}+{blockA}".format_map(vars))
+                    bReg = vgpr("ValuB_X{m}_I{iui}+{blockB}".format_map(vars))
+                    module.add(instruction(
+                        dst=cReg, src0=aReg, src1=bReg, src2=cReg,
+                        vop3=VOP3PModifiers(op_sel=[0,0,0], op_sel_hi=[1,1,0]),
+                        comment="ValuC[%u] iui=%u" % (cidx, vars["iui"])
+                    ))
 
                     module.add(priority(writer, 1, "Raise priority while processing macs"))
 
                     vars["cIdxExpr"] = "{block0}*2 + {block1}*{ThreadTile0}*2 + 0*2 + 1".format_map(vars)
                     cidx  = eval(vars["cIdxExpr"])
-                    cStr  = "v[vgprValuC + {cIdxExpr}]".format_map(vars) # *2 b/c of fp32
-                    opSel = "op_sel:[1,0,0]" if tPA["tileIdx"] == 0 else "op_sel:[0,1,0]"
-                    module.addInst(instruction, cStr, aStr, bStr, cStr, opSel, "op_sel_hi:[1,1,0]", "ValuC[%u]" % cidx)
+                    cReg = vgpr("ValuC+%u" % cidx)
+                    opSel = [1,0,0] if tPA["tileIdx"] == 0 else [0,1,0]
+                    module.add(instruction(
+                        dst=cReg, src0=aReg, src1=bReg, src2=cReg,
+                        vop3=VOP3PModifiers(op_sel=opSel, op_sel_hi=[1,1,0]),
+                        comment="ValuC[%u]" % cidx
+                    ))
 
                     vars["cIdxExpr"] = "{block0}*2 + {block1}*{ThreadTile0}*2 + {Half_ThreadTile0}*2 + 0".format_map(vars)
                     cidx  = eval(vars["cIdxExpr"])
-                    cStr  = "v[vgprValuC+{cIdxExpr}]".format_map(vars)
-                    opSel = "op_sel:[0,1,0]" if tPA["tileIdx"] == 0 else "op_sel:[1,0,0]"
-                    module.addInst(instruction, cStr, aStr, bStr, cStr, opSel, "op_sel_hi:[1,1,0]", "ValuC[%u]" % cidx)
+                    cReg = vgpr("ValuC+%u" % cidx)
+                    opSel = [0,1,0] if tPA["tileIdx"] == 0 else [1,0,0]
+                    module.add(instruction(
+                        dst=cReg, src0=aReg, src1=bReg, src2=cReg,
+                        vop3=VOP3PModifiers(op_sel=opSel, op_sel_hi=[1,1,0]),
+                        comment="ValuC[%u]" % cidx
+                    ))
 
                     vars["cIdxExpr"] = "{block0}*2+{block1}*{ThreadTile0}*2+{Half_ThreadTile0}*2+1".format_map(vars)
                     cidx = eval(vars["cIdxExpr"])
-                    cStr = "v[vgprValuC+{cIdxExpr}]".format_map(vars)
-                    module.addInst(instruction, cStr, aStr, bStr, cStr, "op_sel:[1,1,0]", "op_sel_hi:[1,1,0]", "ValuC[%u]" % cidx)
+                    cReg = vgpr("ValuC+%u" % cidx)
+                    module.add(instruction(
+                        dst=cReg, src0=aReg, src1=bReg, src2=cReg,
+                        vop3=VOP3PModifiers(op_sel=[1,1,0], op_sel_hi=[1,1,0]),
+                        comment="ValuC[%u]" % cidx
+                    ))
 
         module.add(priority(writer, 0, "Reset priority after macs"))
 
+        return module
+
+    @staticmethod
+    def _gfx90c_f32_mac(writer, module, priority, tPA, tPB, m, innerUnroll):
+        """Implement FP16-input HPA without gfx90c packed mixed-MAD."""
+        kernel = writer.states.kernel
+        tmp = writer.states.gfx90cFp16HpaUnpackVgpr
+        if tmp is None:
+            # MAC modules are defined before they are instantiated in the main
+            # loop. Keep these unpack registers reserved for the whole kernel;
+            # returning them here lets later allocations clobber the macro.
+            tmp = writer.vgprPool.checkOutAligned(
+                4, 1, "gfx90cFp16HpaUnpack"
+            )
+            writer.states.gfx90cFp16HpaUnpackVgpr = tmp
+        a_lo, a_hi, b_lo, b_hi = (vgpr(tmp + i) for i in range(4))
+
+        for block1 in range(kernel["ThreadTile1"] // 2):
+            for block0 in range(kernel["ThreadTile0"] // 2):
+                block_a = block0 if tPA["tileIdx"] == 0 else block1
+                block_b = block1 if tPB["tileIdx"] != 0 else block0
+
+                for iui in range(innerUnroll):
+                    a = vgpr(f"ValuA_X{m}_I{iui}+{block_a}")
+                    b = vgpr(f"ValuB_X{m}_I{iui}+{block_b}")
+
+                    module.add(VCvtF16toF32(a_lo, a, comment="unpack A low half"))
+                    module.add(VLShiftRightB32(
+                        a_hi, 16, a, comment="extract A high half"
+                    ))
+                    module.add(VCvtF16toF32(a_hi, a_hi, comment="unpack A high half"))
+                    module.add(VCvtF16toF32(b_lo, b, comment="unpack B low half"))
+                    module.add(VLShiftRightB32(
+                        b_hi, 16, b, comment="extract B high half"
+                    ))
+                    module.add(VCvtF16toF32(b_hi, b_hi, comment="unpack B high half"))
+
+                    c_base = block0 * 2 + block1 * kernel["ThreadTile0"] * 2
+                    if tPA["tileIdx"] == 0:
+                        operands = (
+                            (c_base, a_lo, b_lo),
+                            (c_base + 1, a_hi, b_lo),
+                            (c_base + kernel["ThreadTile0"], a_lo, b_hi),
+                            (c_base + kernel["ThreadTile0"] + 1, a_hi, b_hi),
+                        )
+                    else:
+                        operands = (
+                            (c_base, a_lo, b_lo),
+                            (c_base + 1, a_lo, b_hi),
+                            (c_base + kernel["ThreadTile0"], a_hi, b_lo),
+                            (c_base + kernel["ThreadTile0"] + 1, a_hi, b_hi),
+                        )
+
+                    for index, src0, src1 in operands:
+                        dst = vgpr(f"ValuC+{index}")
+                        module.add(VFmaF32(
+                            dst, src0, src1, dst,
+                            comment=f"ValuC[{index}] gfx90c FP16 HPA"
+                        ))
+
+                    module.add(priority(
+                        writer, 1, "Raise priority while processing macs"
+                    ))
+
+        module.add(priority(writer, 0, "Reset priority after macs"))
         return module

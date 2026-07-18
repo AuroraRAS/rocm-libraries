@@ -30,6 +30,9 @@ add_library(hipblaslt::hipblaslt-clients-common ALIAS hipblaslt-clients-common)
 
 if(HIPBLASLT_ENABLE_BLIS)
     target_link_libraries(hipblaslt-clients-common PUBLIC BLIS::BLIS)
+else()
+    find_library(CBLAS_LIBRARY NAMES cblas openblas REQUIRED)
+    target_link_libraries(hipblaslt-clients-common PUBLIC ${CBLAS_LIBRARY})
 endif()
 target_link_libraries(hipblaslt-clients-common
     PUBLIC
